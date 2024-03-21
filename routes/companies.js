@@ -32,14 +32,26 @@ router.get("/:code",
 async function (req, res, next) {
   const code = req.params.code
 
-  const results = await db.query(
+  const cResults = await db.query(
     `SELECT code, name, description
              FROM companies
              WHERE code = $1`, [code]);
 
-  const company = results.rows[0];
+  const company = cResults.rows[0];
 
-  //TODO: if not company doesnt exist, 404 error
+  if(!company) {
+    throw new NotFoundError("Company does not exist.")
+  }
+
+  const iResults = await db.query( //FIXME: look at directions again
+    `SELECT id, comp_code, amt, paid, add_date, paid_date
+             FROM invoices
+             WHERE comp_code = $1`, [code]);
+
+  const invoices = iResults.rows;
+
+  company.invoices = invoices;
+
 
   return res.json({ company });
 });
@@ -88,7 +100,9 @@ router.put("/:code", async function (req, res, next) {
 
   const company = result.rows[0];
 
-  //TODO: if not company doesnt exist, 404 error
+  if(!company) {
+    throw new NotFoundError("Company does not exist.")
+  }
 
   return res.json({ company });
 });
@@ -96,11 +110,15 @@ router.put("/:code", async function (req, res, next) {
 /** Delete company, returning {status: "Deleted"} */
 
 router.delete("/:code", async function (req, res, next) {
-  await db.query(
-    "DELETE FROM companies WHERE code = $1",
-    // NEED TO RETURN
+  const result = await db.query(
+    `DELETE FROM companies WHERE code = $1
+    RETURNING code`,
     [req.params.code],
   );
+  const company = result.rows[0];
+  if(!company) {
+    throw new NotFoundError("Company does not exist.")
+  }
 
   return res.json({ status: "deleted" });
 });
