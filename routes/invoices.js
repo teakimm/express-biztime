@@ -13,9 +13,10 @@ const { BadRequestError, NotFoundError } = require("../expressError");
 
 router.get("/",
 async function (req, res, next) {
-  const results = await db.query( //TODO: order by id
+  const results = await db.query(
     `SELECT id, comp_code
-             FROM invoices`);
+             FROM invoices
+             ORDER BY id`);
 
   const invoices = results.rows;
   return res.json({ invoices });
@@ -32,23 +33,37 @@ async function (req, res, next) {
   const id = req.params.id
 
   const iResults = await db.query(
-    `SELECT id, comp_code, amt, paid, add_date, paid_date
+    `SELECT id, amt, paid, add_date, paid_date, code, name, description
              FROM invoices
+             JOIN companies
+             ON invoices.comp_code = companies.code
              WHERE id = $1`, [id]);
 
-  const invoice = iResults.rows[0];
+  const resultData = iResults.rows[0];
 
-  if(!invoice) {
+  if(!resultData) {
     throw new NotFoundError("invoice does not exist.")
   }
 
-  const mResult = await db.query(
-    `SELECT code, name, description
-            FROM companies
-            WHERE code = $1`, [invoice.comp_code]
-  )
+  const companyInfo = {"code": resultData.code, "name": resultData.name,
+  "description": resultData.description}
 
-  invoice.company = mResult.rows;
+  const invoice = {
+    id: resultData.id,
+    amt: resultData.amt,
+    paid: resultData.paid,
+    add_date: resultData.add_date,
+    paid_date: resultData.paid_date,
+    company: companyInfo
+  }
+
+  // const mResult = await db.query(
+  //   `SELECT code, name, description
+  //           FROM companies
+  //           WHERE code = $1`, [invoice.comp_code]
+  // )
+
+  // invoice.company = mResult.rows;
 
   return res.json({ invoice });
 });

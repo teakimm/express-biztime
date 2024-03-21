@@ -43,14 +43,14 @@ async function (req, res, next) {
     throw new NotFoundError("Company does not exist.")
   }
 
-  const iResults = await db.query( //FIXME: look at directions again
+  const iResults = await db.query(
     `SELECT id, comp_code, amt, paid, add_date, paid_date
              FROM invoices
              WHERE comp_code = $1`, [code]);
 
   const invoices = iResults.rows;
 
-  company.invoices = invoices;
+  company.invoices = invoices.map(r => r.id);
 
 
   return res.json({ company });
