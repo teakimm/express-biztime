@@ -1,6 +1,7 @@
 "use strict";
 
 const express = require("express");
+const slugify = require("slugify")
 
 const db = require("../db");
 const router = new express.Router();
@@ -65,8 +66,19 @@ async function (req, res, next) {
 router.post("/", async function (req, res, next) {
   console.log ("*** POST / req.body:", req.body);
   if (!req.body) throw new BadRequestError();
+  const { name, description } = req.body;
 
-  const { code, name, description } = req.body;
+  const code = slugify(req.body.name, {
+    replacement: "",
+    remove: undefined,
+    lower: true,
+    strict: true,
+    locale: "en",
+    trim: true
+  });
+
+  console.log(name)
+
   const result = await db.query(
     `INSERT INTO companies (code, name, description)
            VALUES ($1, $2, $3)

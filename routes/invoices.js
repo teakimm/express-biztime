@@ -12,15 +12,15 @@ const { BadRequestError, NotFoundError } = require("../expressError");
  */
 
 router.get("/",
-async function (req, res, next) {
-  const results = await db.query(
-    `SELECT id, comp_code
+  async function (req, res, next) {
+    const results = await db.query(
+      `SELECT id, comp_code
              FROM invoices
              ORDER BY id`);
 
-  const invoices = results.rows;
-  return res.json({ invoices });
-});
+    const invoices = results.rows;
+    return res.json({ invoices });
+  });
 
 /** Search by invoice id.
  *  Returns JSON
@@ -28,45 +28,40 @@ async function (req, res, next) {
  *    {code, name, description}
  * }
  */
-router.get("/:id", //TODO: try in one query using a join
-async function (req, res, next) {
-  const id = req.params.id
+router.get("/:id",
+  async function (req, res, next) {
+    const id = req.params.id;
 
-  const iResults = await db.query(
-    `SELECT id, amt, paid, add_date, paid_date, code, name, description
+    const iResults = await db.query(
+      `SELECT id, amt, paid, add_date, paid_date, code, name, description
              FROM invoices
              JOIN companies
              ON invoices.comp_code = companies.code
              WHERE id = $1`, [id]);
 
-  const resultData = iResults.rows[0];
+    const resultData = iResults.rows[0];
 
-  if(!resultData) {
-    throw new NotFoundError("invoice does not exist.")
-  }
+    if (!resultData) {
+      throw new NotFoundError("invoice does not exist.");
+    }
 
-  const companyInfo = {"code": resultData.code, "name": resultData.name,
-  "description": resultData.description}
+    const companyInfo = {
+      code: resultData.code,
+      name: resultData.name,
+      description: resultData.description
+    };
 
-  const invoice = {
-    id: resultData.id,
-    amt: resultData.amt,
-    paid: resultData.paid,
-    add_date: resultData.add_date,
-    paid_date: resultData.paid_date,
-    company: companyInfo
-  }
+    const invoice = {
+      id: resultData.id,
+      amt: resultData.amt,
+      paid: resultData.paid,
+      add_date: resultData.add_date,
+      paid_date: resultData.paid_date,
+      company: companyInfo
+    };
 
-  // const mResult = await db.query(
-  //   `SELECT code, name, description
-  //           FROM companies
-  //           WHERE code = $1`, [invoice.comp_code]
-  // )
-
-  // invoice.company = mResult.rows;
-
-  return res.json({ invoice });
-});
+    return res.json({ invoice });
+  });
 
 
 /** Create new invoice,
@@ -75,7 +70,7 @@ async function (req, res, next) {
 */
 
 router.post("/", async function (req, res, next) {
-  console.log ("*** POST / req.body:", req.body);
+  console.log("*** POST / req.body:", req.body);
   if (!req.body) throw new BadRequestError();
 
   const { comp_code, amt } = req.body;
@@ -84,11 +79,11 @@ router.post("/", async function (req, res, next) {
     `SELECT code
             FROM companies
             WHERE code = $1`, [comp_code]
-  )
+  );
   const company = cResults.rows[0];
 
-  if(!company) {
-    throw new NotFoundError("Company code does not exist")
+  if (!company) {
+    throw new NotFoundError("Company code does not exist");
   }
 
   const iResults = await db.query(
@@ -123,8 +118,8 @@ router.put("/:id", async function (req, res, next) {
 
   const invoice = result.rows[0];
 
-  if(!invoice) {
-    throw new NotFoundError("Invoice does not exist.")
+  if (!invoice) {
+    throw new NotFoundError("Invoice does not exist.");
   }
 
   return res.json({ invoice });
@@ -142,8 +137,8 @@ router.delete("/:id", async function (req, res, next) {
 
   const invoice = result.rows[0];
 
-  if(!invoice) {
-    throw new NotFoundError("invoice does not exist.")
+  if (!invoice) {
+    throw new NotFoundError("invoice does not exist.");
   }
 
   return res.json({ status: "deleted" });
