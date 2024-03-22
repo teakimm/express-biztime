@@ -89,3 +89,65 @@ describe("POST /companies", function () {
     expect(resp.statusCode).toEqual(400);
   });
 });
+
+/** PUT /companies/[id] - update & return {companies} */
+
+describe("PUT /companies/:name", function () {
+  test("Update company", async function () {
+    const resp = await request(app)
+        .put(`/companies/appleinc`)
+        .send({ name: "Tesla Inc", description: "test" });
+    expect(resp.statusCode).toEqual(200);
+    expect(resp.body).toEqual({
+      company: {
+        code: 'appleinc',
+        name: 'Tesla Inc',
+        description: 'test'
+      }
+    });
+
+    // test db
+    const result = await db.query(
+      `SELECT *
+        FROM companies
+        WHERE code = 'appleinc'`);
+    const rows = result.rows;
+    expect(rows.length).toEqual(1);
+    expect(rows[0].name).toEqual("Tesla Inc");
+    });
+
+  test("PUT 404 if not found",
+    async function () {
+  const resp = await request(app)
+    .put(`/companies/0`)
+    .send({name: "Tesla"});
+  expect(resp.statusCode).toEqual(404);
+  });
+
+  test("PUT 400 if empty request body",
+    async function () {
+  const resp = await request(app)
+    .put(`/companies/appleinc`)
+    .send();
+  expect(resp.statusCode).toEqual(400);
+});
+});
+
+
+/** DELETE /companies/[id] - delete company,
+ *  return `{message: "company deleted"}` */
+
+describe("DELETE /company/:code", function () {
+  test("Delete single company", async function () {
+    const resp = await request(app)
+        .delete(`/companies/appleinc`);
+    expect(resp.statusCode).toEqual(200);
+    expect(resp.body).toEqual({ status: "deleted" });
+
+    // test db
+    const result = await db.query(
+      `SELECT * FROM companies`);
+    expect(result.rows.length).toEqual(0);
+  });
+});
+
